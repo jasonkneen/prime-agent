@@ -4201,18 +4201,11 @@ export class AgentDaemon {
 
 			case "mutate_queue_item": {
 				const state = this.getSessionState(command.activeSessionId);
-				const mutationResult: "applied" | "noop" | "stale" | boolean =
-					state.runtime.session.mutateQueuedUserMessage(
-						command.actionId,
-						command.expectedRevision,
-						command.mutation,
-					);
-				const outcome =
-					(mutationResult as unknown) === true
-						? "applied"
-						: (mutationResult as unknown) === false
-							? "stale"
-							: mutationResult;
+				const outcome = state.runtime.session.mutateQueuedUserMessage(
+					command.actionId,
+					command.expectedRevision,
+					command.mutation,
+				);
 				return success(command.id, "mutate_queue_item", {
 					status: outcome,
 					queue: createQueueState(state.runtime.session, true),

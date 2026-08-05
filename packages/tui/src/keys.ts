@@ -820,7 +820,7 @@ function parseKeyId(
 export function matchesKey(data: string, keyId: KeyId): boolean {
 	// Legacy macOS terminals encode Option as an extra ESC prefix around the
 	// sequence for the remaining modifiers (for example ESC + Ctrl+Up).
-	if (data.startsWith("\x1b\x1b")) {
+	if (data.startsWith("\x1b\x1b[") || data.startsWith("\x1b\x1bO")) {
 		const parsedLegacyMeta = parseKeyId(keyId);
 		if (parsedLegacyMeta?.alt) {
 			const withoutAlt = keyId

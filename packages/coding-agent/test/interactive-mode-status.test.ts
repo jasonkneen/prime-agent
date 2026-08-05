@@ -833,7 +833,7 @@ describe("InteractiveMode submit handling", () => {
 		expect(fakeThis.showError).toHaveBeenCalledWith("transport failed");
 	});
 
-	test.each(["unsupported", "stale"] as const)(
+	test.each(["invalid", "unsupported", "stale"] as const)(
 		"keeps the selected edit when atomic mutation is %s",
 		async (status) => {
 			let editorText = "edited";
@@ -845,6 +845,7 @@ describe("InteractiveMode submit handling", () => {
 					checkpoint: () => ({ marker: true, draft: "draft" }),
 					change: () => ({ draft: "draft" }),
 					restore: vi.fn(),
+					reconcile: vi.fn(),
 					reset: vi.fn(),
 				},
 				setEditorFromPendingNavigation: (text: string) => {
@@ -867,8 +868,17 @@ describe("InteractiveMode submit handling", () => {
 				editorText,
 			);
 			expect(applied).toBe("retained");
-			expect(editorText).toBe(status === "unsupported" ? "edited" : "draft");
+			expect(editorText).toBe(status === "stale" ? "draft" : "edited");
 			expect(showWarning).toHaveBeenCalledOnce();
+			if (status === "invalid") {
+				expect(fakeThis.pendingMessageNavigation.reconcile).toHaveBeenCalledWith(
+					{ steering: [], followUp: ["old"], revision: 1 },
+					"action-1",
+				);
+				expect(showWarning).toHaveBeenCalledWith(
+					"Queued session commands must remain valid session commands; your edit was not applied.",
+				);
+			}
 		},
 	);
 

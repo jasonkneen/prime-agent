@@ -8306,7 +8306,7 @@ describe("daemon mode helpers", () => {
 				throw new Error("unexpected runtime creation");
 			},
 		});
-		const mutateQueuedUserMessage = vi.fn(() => true);
+		const mutateQueuedUserMessage = vi.fn(() => "applied" as const);
 		const getEditableQueueItems = vi.fn(() => [{ id: "action-1", lane: "followUp", index: 0, text: "edited" }]);
 		const state = makeState("active-1") as ActiveSessionState;
 		(state.runtime as { session: unknown }).session = {

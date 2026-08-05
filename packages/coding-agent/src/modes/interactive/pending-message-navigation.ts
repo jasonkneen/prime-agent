@@ -182,15 +182,6 @@ export class PendingMessageNavigation {
 			this.edits.set(selected.id, text);
 			return { draft: this.draft, selected: moved };
 		}
-		if (!queue.items) queue[selected.lane].splice(selected.index, 1);
-		if (queue.items)
-			queue.items = queue.items
-				.filter((item) => item.id !== selected.id)
-				.map((item) =>
-					item.lane === selected.lane && item.index > selected.index ? { ...item, index: item.index - 1 } : item,
-				);
-		if (kind === "followUp" && !queue.items)
-			queue.followUp.splice(selected.lane === "followUp" ? selected.index : queue.followUp.length, 0, text);
 		const draft = this.draft;
 		this.reset();
 		return { draft };

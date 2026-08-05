@@ -7084,7 +7084,12 @@ export class InteractiveMode {
 		}
 		if (result.status !== "applied") {
 			this.connectionQueue = result.queue;
-			if (result.status === "unsupported") {
+			if (result.status === "invalid") {
+				this.pendingMessageNavigation.restore(checkpoint);
+				this.pendingMessageNavigation.reconcile(result.queue, selected.id);
+				if (this.editorChangeGeneration === editorGeneration) this.setEditorFromPendingNavigation(text);
+				this.showWarning("Queued session commands must remain valid session commands; your edit was not applied.");
+			} else if (result.status === "unsupported") {
 				this.pendingMessageNavigation.restore(checkpoint);
 				if (this.editorChangeGeneration === editorGeneration) this.setEditorFromPendingNavigation(text);
 				this.showWarning("Restart or update the daemon to edit queued messages.");

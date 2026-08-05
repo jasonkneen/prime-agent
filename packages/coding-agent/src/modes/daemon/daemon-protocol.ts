@@ -59,8 +59,9 @@ export const DAEMON_COMMAND_ENVELOPE_MIN_PROTOCOL_VERSION = 7;
 // Revision 13 narrows agent-origin reach and roster wire shapes to the nuclear family.
 // Revision 14 adds capability-gated queued-message mutation.
 // Revision 15 adds revisioned CAS semantics to queued-message mutation.
-export const DAEMON_SCHEMA_REVISION = 15;
-export const DAEMON_SCHEMA_ID = "protocol-7-schema-15-183e264f7df2";
+// Revision 16 adds explicit invalid-command mutation outcomes.
+export const DAEMON_SCHEMA_REVISION = 16;
+export const DAEMON_SCHEMA_ID = "protocol-7-schema-16-183e264f7df2";
 
 export type DaemonProtocolName = typeof DAEMON_PROTOCOL_NAME;
 export type DaemonProtocolVersion = number;
@@ -694,7 +695,7 @@ export const DAEMON_COMMAND_COMPATIBILITY = {
 	get_queue: LEGACY_DAEMON_COMMAND,
 	clear_queue: LEGACY_DAEMON_COMMAND,
 	abort_and_clear_queue: LEGACY_DAEMON_COMMAND,
-	mutate_queue_item: { minProtocol: 7, minSchemaRevision: 15, capability: "queue_item_mutation" },
+	mutate_queue_item: { minProtocol: 7, minSchemaRevision: 16, capability: "queue_item_mutation" },
 	cron_list: LEGACY_DAEMON_COMMAND,
 	heartbeats_list: { minProtocol: 7, capability: "heartbeat_catalog" },
 	heartbeat_manage: { minProtocol: 7, capability: "heartbeat_management" },

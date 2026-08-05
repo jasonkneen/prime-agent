@@ -795,8 +795,11 @@ function visibleSessionActionProjection(actions: readonly QueuedSessionAction[])
 /** User-authored queued actions share one editable projection, including session commands. */
 function isEditableQueuedAction(action: QueuedSessionAction): boolean {
 	return (
-		action.payload.kind === "session_command" ||
-		(action.payload.queueVisible &&
+		(action.payload.kind === "session_command" &&
+			action.agentMessageId === undefined &&
+			!action.suppressAutonomousContinuation) ||
+		(action.payload.kind === "turn" &&
+			action.payload.queueVisible &&
 			!action.payload.acceptedAgentMessage &&
 			action.payload.customMessage === undefined)
 	);
@@ -6126,7 +6129,7 @@ export class AgentSession {
 		mutation:
 			| { type: "delete" | "move_earlier" | "move_later" }
 			| { type: "replace_follow_up" | "replace_steering"; text: string; images?: ImageContent[] },
-	): "applied" | "noop" | "stale" {
+	): "applied" | "invalid" | "noop" | "stale" {
 		if (expectedRevision !== this._queueRevision) return "stale";
 		const action = this._actionStore.queuedActions().find((candidate) => candidate.id === actionId);
 		if (!action || !isEditableQueuedAction(action)) return "stale";
@@ -6142,16 +6145,21 @@ export class AgentSession {
 				(candidate) => candidate === action,
 				new Error("Queued prompt was deleted before delivery."),
 			);
+			return "applied";
 		} else if ("text" in mutation) {
 			const targetLane: DeliveryPolicy =
 				mutation.type === "replace_steering" ? "next_turn_boundary" : "when_run_idle";
 			const targetIndex = this._actionStore.queuedActions(targetLane).length;
 			if (action.payload.kind === "session_command") {
 				const command = parseSessionSlashCommand(mutation.text);
-				if (!command) return "stale";
+				if (!command) return "invalid";
 				action.payload.text = mutation.text;
 				action.payload.command = command;
-				action.payload.images = mutation.images;
+				if (mutation.images !== undefined) {
+					action.payload.images = mutation.images.length
+						? mutation.images.map((image) => ({ ...image }))
+						: undefined;
+				}
 			} else {
 				action.payload.text = mutation.text;
 				if (mutation.images !== undefined) {
@@ -6176,7 +6184,10 @@ export class AgentSession {
 					}
 				}
 			}
-			if (targetLane !== lane) this._actionStore.moveQueued(action, targetLane, targetIndex);
+			if (targetLane !== lane) {
+				action.queueKey = undefined;
+				this._actionStore.moveQueued(action, targetLane, targetIndex);
+			}
 		}
 		this._emitQueueUpdate(true);
 		return "applied";

@@ -244,10 +244,11 @@ describe("AgentSession concurrent prompt guard", () => {
 		]);
 		expect(
 			session.mutateQueuedUserMessage(command!.id, session.queueRevision, {
-				type: "replace_steering",
+				type: "replace_follow_up",
 				text: "/compact revised focus",
 			}),
 		).toBe("applied");
+		expect(session.getEditableQueueItems().find((item) => item.id === command!.id)?.lane).toBe("followUp");
 		const editedCommand = session
 			.getSessionActionRecoverySnapshot()
 			.actions.find((action) => action.id === command!.id);
@@ -256,6 +257,50 @@ describe("AgentSession concurrent prompt guard", () => {
 			text: "/compact revised focus",
 			command: { name: "compact", args: "revised focus" },
 		});
+		const commandRevision = session.queueRevision;
+		expect(
+			session.mutateQueuedUserMessage(command!.id, commandRevision, {
+				type: "replace_steering",
+				text: "not a session command",
+			}),
+		).toBe("invalid");
+		expect(session.queueRevision).toBe(commandRevision);
+		const commandImage: ImageContent = { type: "image", data: "command", mimeType: "image/png" };
+		expect(
+			session.mutateQueuedUserMessage(command!.id, session.queueRevision, {
+				type: "replace_steering",
+				text: "/compact revised focus",
+				images: [commandImage],
+			}),
+		).toBe("applied");
+		expect(
+			session.mutateQueuedUserMessage(command!.id, session.queueRevision, {
+				type: "replace_steering",
+				text: "/compact preserve image",
+			}),
+		).toBe("applied");
+		let commandPayload = session
+			.getSessionActionRecoverySnapshot()
+			.actions.find((action) => action.id === command!.id)?.payload;
+		expect(commandPayload).toMatchObject({ images: [commandImage] });
+		if (commandPayload?.kind === "session_command") expect(commandPayload.images?.[0]).not.toBe(commandImage);
+		expect(
+			session.mutateQueuedUserMessage(command!.id, session.queueRevision, {
+				type: "replace_steering",
+				text: "/compact clear image",
+				images: [],
+			}),
+		).toBe("applied");
+		commandPayload = session
+			.getSessionActionRecoverySnapshot()
+			.actions.find((action) => action.id === command!.id)?.payload;
+		expect(commandPayload).not.toHaveProperty("images");
+		expect(session.mutateQueuedUserMessage(command!.id, session.queueRevision, { type: "move_earlier" })).toBe(
+			"applied",
+		);
+		expect(session.mutateQueuedUserMessage(command!.id, session.queueRevision, { type: "move_later" })).toBe(
+			"applied",
+		);
 		expect(
 			session.mutateQueuedUserMessage(second!.id, session.queueRevision, {
 				type: "replace_steering",
@@ -294,7 +339,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		expect(session.getEditableQueueItems()).toMatchObject([
 			{ id: first!.id, lane: "steering", text: "duplicate" },
 			{ id: extension!.id, lane: "steering", text: "extension item" },
-			{ id: command!.id, lane: "steering", text: "/compact revised focus" },
+			{ id: command!.id, lane: "steering", text: "/compact clear image" },
 			{ id: follow!.id, lane: "followUp", text: "follow" },
 			{ id: second!.id, lane: "followUp", text: "converted" },
 		]);
@@ -304,6 +349,7 @@ describe("AgentSession concurrent prompt guard", () => {
 			{ type: "text", text: "converted" },
 			image,
 		]);
+		expect(session.mutateQueuedUserMessage(command!.id, session.queueRevision, { type: "delete" })).toBe("applied");
 		expect(session.mutateQueuedUserMessage(second!.id, session.queueRevision, { type: "delete" })).toBe("applied");
 		expect(session.mutateQueuedUserMessage(second!.id, session.queueRevision, { type: "delete" })).toBe("stale");
 		expect(session.isStreaming).toBe(true);

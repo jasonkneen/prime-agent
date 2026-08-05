@@ -86,10 +86,10 @@ describe("daemon protocol helpers", () => {
 	});
 
 	it("capability- and schema-gates atomic queue item mutation", () => {
-		expect(DAEMON_SCHEMA_REVISION).toBe(15);
+		expect(DAEMON_SCHEMA_REVISION).toBe(16);
 		expect(DAEMON_COMMAND_COMPATIBILITY.mutate_queue_item).toEqual({
 			minProtocol: 7,
-			minSchemaRevision: 15,
+			minSchemaRevision: 16,
 			capability: "queue_item_mutation",
 		});
 		expect(DAEMON_DEFAULT_SERVER_CAPABILITIES).toContain("queue_item_mutation");
